@@ -1,6 +1,6 @@
-//! Backend Rust — HTTP.
+//! Rust HTTP Backend.
 //!
-//! Flux of one request : `f1_router` → `f2_dto` (validation) → `f3_services` → `f4_repo`.
+//! Request flow: `f1_router` → `f2_dto` (validation) → `f3_services` → `f4_repo`.
 
 pub mod config;
 pub mod error;
@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use crate::{config::Config, f4_repo::Db};
 
-/// État partagé entre toutes les routes.
+/// Shared state across all routes.
 #[derive(Clone)]
 pub struct AppState {
     pub db: Db,

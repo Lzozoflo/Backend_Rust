@@ -1,7 +1,8 @@
-//! Requêtes SQL de l'entité user. Aucune logique métier ici.
+//! SQL queries for the `user` entity. Contains no business logic.
 //!
-//! Les valeurs venant de l'utilisateur passent TOUJOURS par `.bind()` (requêtes
-//! paramétrées `$1, $2…`) : jamais de concaténation, donc aucune injection SQL possible.
+//! User-supplied values ALWAYS go through `.bind()` (parameterized queries `$1, $2…`):
+//! string concatenation is never used, preventing SQL injection.
+
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -25,7 +26,7 @@ pub struct NewUser<'a> {
     pub password_hash: &'a str,
 }
 
-/// Seuls les champs `Some` sont modifiés.
+/// Partial update payload: only `Some` fields are modified.
 #[derive(Debug, Default)]
 pub struct UserChanges<'a> {
     pub username: Option<&'a str>,
@@ -75,7 +76,7 @@ pub async fn update(db: &Db, id: Uuid, changes: UserChanges<'_>) -> Result<Optio
     Ok(user)
 }
 
-/// Retourne `true` si une ligne a été supprimée.
+/// Deletes a user by ID. Returns `true` if a row was deleted.
 pub async fn delete(db: &Db, id: Uuid) -> Result<bool, AppError> {
     let result = sqlx::query("DELETE FROM users WHERE id = $1").bind(id).execute(db).await?;
     Ok(result.rows_affected() > 0)

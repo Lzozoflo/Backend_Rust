@@ -1,8 +1,8 @@
 use crate::error::AppError;
 
-/// Un DTO d'entrée sait se valider lui-même. L'extracteur `ValidJson`
-/// (f1_route/extract.rs) appelle `validate()` avant que le handler ne s'exécute :
-/// une entrée invalide n'atteint donc jamais les services.
+/// Input DTOs validate their own contents. The `ValidJson` extractor
+/// (`f1_router/extract.rs`) calls `validate()` before the route handler executes,
+/// ensuring invalid input never reaches the service layer.
 pub trait Validate {
     fn validate(&self) -> Result<(), AppError>;
 }

@@ -1,12 +1,12 @@
-//! DTO de sortie de l'entité user : jamais de hash de mot de passe.
+//! Output DTOs for the `user` entity: never exposes password hashes.
+
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use uuid::Uuid;
 
 use crate::f4_repo::user::User;
 
-/// UserResponse
-/// when a user was created
+/// Public user representation returned by the API.
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
     pub id: Uuid,

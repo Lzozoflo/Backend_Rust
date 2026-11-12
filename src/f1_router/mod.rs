@@ -1,4 +1,4 @@
-//! Flow Router
+//! HTTP Routing Layer (`f1_router`).
 
 pub mod extract;
 pub mod health;
@@ -13,7 +13,7 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .merge(health::router())
         .merge(user::router())
-        .fallback(|| async { AppError::NotFound("Unknow location") })
+        .fallback(|| async { AppError::NotFound("unknown route") })
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state)

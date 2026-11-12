@@ -1,4 +1,4 @@
-//! Création et vérification des JWT (HS256).
+//! JWT creation and verification (HS256).
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -7,7 +7,7 @@ use crate::error::AppError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    /// Identifiant de l'utilisateur.
+    /// Subject (User UUID).
     pub sub: String,
     pub iat: u64,
     pub exp: u64,
@@ -27,7 +27,7 @@ pub fn create_token(user_id: Uuid, secret: &str, ttl_secs: u64) -> Result<String
         .map_err(|e| AppError::Internal(format!("jwt : {e}")))
 }
 
-/// Retourne l'identifiant de l'utilisateur si le token est valide et non expiré.
+/// Returns the user's `Uuid` if the token signature is valid and not expired.
 pub fn verify_token(token: &str, secret: &str) -> Result<Uuid, AppError> {
     let data = decode::<Claims>(token, &DecodingKey::from_secret(secret.as_bytes()), &Validation::default())
         .map_err(|_| AppError::Unauthorized)?;

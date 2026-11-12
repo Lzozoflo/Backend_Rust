@@ -1,4 +1,4 @@
-# TheScratchGame — backend (Axum + SQLx)
+# Backend_Rust — Axum + SQLx
 
 Backend HTTP en Rust : inscription, connexion et gestion de compte.
 Stack : **Axum** (HTTP) · **SQLx** (PostgreSQL, requêtes paramétrées) · **JWT** · **Argon2id**.

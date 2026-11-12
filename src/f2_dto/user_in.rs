@@ -1,4 +1,6 @@
-//! DTO d'entrée de l'entité user. Chaque DTO valide lui-même son contenu.
+//! Input DTOs for the `user` entity. Each DTO validates its own payload.
+
+
 use serde::Deserialize;
 
 use super::validate::Validate;
@@ -9,12 +11,12 @@ const PASSWORD_MIN_LEN: usize = 8;
 const PASSWORD_MAX_LEN: usize = 128;
 const EMAIL_MAX_LEN: usize = 254;
 
-/// Forme canonique d'un username (espaces de bord retirés).
+/// Returns the canonical form of a username (leading and trailing whitespace trimmed).
 pub fn normalize_username(username: &str) -> &str {
     username.trim()
 }
 
-/// Forme canonique d'un email (sans espaces de bord, en minuscules).
+/// Returns the canonical form of an email (trimmed and lowercased).
 pub fn normalize_email(email: &str) -> String {
     email.trim().to_lowercase()
 }
@@ -55,7 +57,7 @@ impl Validate for LoginRequest {
 
 // ─────────────────────────────── Update ───────────────────────────────
 
-/// Tous les champs sont optionnels : seuls ceux fournis sont modifiés.
+/// All fields are optional: only provided fields are updated.
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
     pub username: Option<String>,

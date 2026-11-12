@@ -1,5 +1,6 @@
-//! Hachage Argon2id avec sel aléatoire. Le hachage est coûteux en CPU :
-//! les versions `async` l'exécutent hors du runtime via `spawn_blocking`.
+//! Argon2id password hashing with random salt. Because hashing is CPU-intensive,
+//! async wrappers execute it off the async runtime via `spawn_blocking`.
+
 use std::sync::OnceLock;
 
 use argon2::{
@@ -9,7 +10,8 @@ use argon2::{
 
 use crate::error::AppError;
 
-/// Hache un mot de passe (le sel est généré et inclus dans le hash PHC).
+
+/// Hashes a plaintext password (a random salt is generated and embedded in the PHC string).
 pub fn hash_password(password: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
@@ -19,18 +21,18 @@ pub fn hash_password(password: &str) -> Result<String, AppError> {
 }
 
 
-/// Compare un mot de passe à un hash PHC.
+/// Verifies a plaintext password against a PHC hash string.
 ///
-/// Un hash illisible ne valide jamais (retourne `false`).
+/// Malformed hashes never validate (always returns `false`).
 ///
-/// # Exemple
+/// # Example
 ///
 /// ```
 /// use backend_rust::f3_services::user::password::{hash_password, verify_password};
 ///
 /// let hash = hash_password("motdepasse1").unwrap();
 /// assert!(verify_password("motdepasse1", &hash));
-/// assert!(!verify_password("autre", &hash));
+/// assert!(!verify_password("other", &hash));
 /// ```
 pub fn verify_password(password: &str, hash: &str) -> bool {
     PasswordHash::new(hash)
@@ -46,8 +48,8 @@ pub async fn verify(password: String, hash: String) -> Result<bool, AppError> {
     run_blocking(move || verify_password(&password, &hash)).await
 }
 
-/// Fait payer le coût d'une vérification même quand l'email est inconnu, pour que
-/// le temps de réponse ne révèle pas si un compte existe.
+/// Performs a dummy password verification when the email is unknown, mitigating
+/// timing attacks that could reveal whether an account exists.
 pub async fn verify_dummy(password: String) -> Result<(), AppError> {
     static DUMMY_HASH: OnceLock<String> = OnceLock::new();
     run_blocking(move || {

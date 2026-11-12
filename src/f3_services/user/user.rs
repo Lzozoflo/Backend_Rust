@@ -1,5 +1,5 @@
-//! Logique métier de l'entité user. Appelle la couche f4, ne contient aucun SQL.
-//! L'input arrive déjà validé par les DTO.
+//! Business logic for the `user` entity. Calls the `f4_repo` layer and contains no SQL.
+//! Input arrives pre-validated by the DTO layer.
 use uuid::Uuid;
 
 use super::{password, token};

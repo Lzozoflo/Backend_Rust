@@ -1,4 +1,5 @@
-//! Extracteurs partagés par les routes.
+//! Shared Axum extractors for route handlers.
+//! 
 use axum::{
     extract::{FromRequest, FromRequestParts, Request},
     http::{header::AUTHORIZATION, request::Parts},
@@ -14,8 +15,9 @@ use crate::{
     AppState,
 };
 
-/// Corps JSON désérialisé **et validé** : si le handler s'exécute, le DTO est valide.
-/// Les erreurs de format sont renvoyées en JSON (400), comme les erreurs de validation.
+
+/// Deserialized **and validated** JSON body: if the handler runs, the DTO is guaranteed to be valid.
+/// Formatting errors are returned as JSON (`400 Bad Request`), just like validation errors.
 pub struct ValidJson<T>(pub T);
 
 impl<S, T> FromRequest<S> for ValidJson<T>
@@ -24,17 +26,17 @@ where
     T: DeserializeOwned + Validate,
 {
     type Rejection = AppError;
-
+    
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let Json(value) = Json::<T>::from_request(req, state)
             .await
-            .map_err(|rejection| AppError::Validation(format!("JSON invalide : {}", rejection.body_text())))?;
+            .map_err(|rejection| AppError::Validation(format!("invalid JSON: {}", rejection.body_text())))?;
         value.validate()?;
         Ok(Self(value))
     }
 }
 
-/// Utilisateur authentifié via `Authorization: Bearer <jwt>`.
+/// Authenticated user extracted from `Authorization: Bearer <jwt>`.
 pub struct AuthUser(pub Uuid);
 
 impl FromRequestParts<AppState> for AuthUser {

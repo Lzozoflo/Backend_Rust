@@ -1,9 +1,10 @@
-//! # Routes user
-//! 
-//! ```
-//! /register   post(register)
-//! /login      post(login)
-//! /user       put(update), (delete)
+//! # User Routes
+//!
+//! ```text
+//! POST   /register -> register()
+//! POST   /login    -> login()
+//! PUT    /user     -> update_user()
+//! DELETE /user     -> delete_user()
 //! ```
 
 use axum::{extract::State, http::StatusCode, Json, routing::{post, put}, Router};

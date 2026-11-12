@@ -1,4 +1,4 @@
-//! Pool de connexions et migrations.
+//! Database connection pool and embedded migrations.
 use std::time::Duration;
 
 use sqlx::{postgres::PgPoolOptions, Connection, PgConnection, PgPool};
@@ -10,12 +10,12 @@ const MAX_CONNECTIONS: u32 = 10;
 const CONNECT_ATTEMPTS: u32 = 10;
 const RETRY_DELAY: Duration = Duration::from_secs(2);
 
-/// Pool qui ne se connecte qu'à la première requête (utile pour les tests sans base).
+/// Creates a lazy pool that only connects on the first query (useful for database-less tests).
 pub fn connect_lazy(url: &str) -> Db {
     PgPoolOptions::new().max_connections(MAX_CONNECTIONS).connect_lazy(url).expect("DATABASE_URL invalide")
 }
 
-/// Pool connecté, avec quelques tentatives : la base peut démarrer après le backend.
+/// Connects to PostgreSQL with automatic retries, handling cases where the database starts after the backend.
 pub async fn connect(url: &str) -> Result<Db, sqlx::Error> {
     let mut attempt = 1;
     loop {
@@ -31,7 +31,7 @@ pub async fn connect(url: &str) -> Result<Db, sqlx::Error> {
     }
 }
 
-/// Applique les migrations du dossier `migrations/` (embarquées dans le binaire).
+/// Runs pending SQL migrations from `migrations/` (embedded into the binary at compile time).
 pub async fn migrate(url: &str) -> Result<(), MigrationError> {
     let mut connection = PgConnection::connect(url).await?;
     sqlx::migrate!("./migrations").run(&mut connection).await?;

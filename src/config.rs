@@ -1,4 +1,4 @@
-//! Configuration de l'application, lue depuis les variables d'environnement.
+//! Application configuration, loaded from environment variables.
 use std::{env, fmt, str::FromStr};
 
 // Secret JWT de développement. Refusé en production par `docker-compose.prod.yml`.
@@ -15,8 +15,8 @@ pub struct Config {
 }
 
 impl Config {
-    /// Lit la configuration. Une variable absente prend sa valeur par défaut,
-    /// une variable présente mais invalide fait échouer le démarrage (fail fast).
+    /// Reads configuration from the environment. Missing variables fall back to default values;
+    /// present but invalid variables cause startup to panic (fail-fast).
     pub fn from_env() -> Self {
         Self {
             database_url: var_or("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/backend_rust_db".to_string()),
@@ -32,7 +32,6 @@ impl Config {
     }
 }
 
-// Le secret et l'URL de la base ne doivent jamais finir dans les logs.
 impl fmt::Debug for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Config")
@@ -49,7 +48,7 @@ where
     T::Err: fmt::Display,
 {
     match env::var(key) {
-        Ok(raw) => raw.parse().unwrap_or_else(|e| panic!("variable {key}={raw:?} invalide : {e}")),
+        Ok(raw) => raw.parse().unwrap_or_else(|e| panic!("invalid variable {key}={raw:?}: {e}")),
         Err(_) => default,
     }
 }
@@ -71,19 +70,19 @@ mod tests {
 
     #[test]
     fn debug_never_leaks_secrets() {
-        let out = format!("{:?}", config("tres-secret"));
-        assert!(!out.contains("tres-secret"));
+        let out = format!("{:?}", config("very-secret"));
+        assert!(!out.contains("very-secret"));
         assert!(!out.contains("secret-pass"));
     }
 
     #[test]
     fn detects_dev_secret() {
         assert!(config(DEV_TOKEN_SECRET).uses_dev_secret());
-        assert!(!config("autre-secret").uses_dev_secret());
+        assert!(!config("other-secret").uses_dev_secret());
     }
 
     #[test]
     fn var_or_uses_default_when_unset() {
-        assert_eq!(var_or("TSG_VARIABLE_QUI_N_EXISTE_PAS", 42u16), 42);
+        assert_eq!(var_or("TSG_NON_EXISTENT_VARIABLE", 42u16), 42);
     }
 }

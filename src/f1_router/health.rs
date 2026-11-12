@@ -1,9 +1,8 @@
-//! # Routes health
-//! 
+//! # Health Routes
+//!
+//! ```text
+//! GET /health -> health()
 //! ```
-//! /heatlh   get(heatlh)
-//! ```
-
 use axum::{extract::State, Json, routing::get, Router};
 
 use crate::{f2_dto::health_out::HealthResponse, AppState};

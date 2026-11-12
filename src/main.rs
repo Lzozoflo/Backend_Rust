@@ -31,7 +31,7 @@ async fn main() {
     tracing::info!("Good finish");
 }
 
-/// Attend Ctrl-C ou SIGTERM (envoyé par `docker stop`).
+/// Waits for `Ctrl-C` (`SIGINT`) or `SIGTERM` (sent by `docker stop`) for graceful shutdown.
 async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c().await.expect("listen Ctrl-C impossible");

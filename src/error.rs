@@ -1,5 +1,6 @@
-// ! Erreur applicative unique, convertie en réponse JSON `{ "error": "..." }`.
-// ! Les conversions depuis les erreurs de base de données vivent dans la couche f4.
+//! Unified application error, converted into a `{ "error": "..." }` JSON response.
+//! Conversions from database errors live in the `f4_repo` layer.
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -9,21 +10,22 @@ use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
-    /// Entrée invalide (rejetée par un DTO ou JSON mal formé).
+    /// Invalid input (rejected by DTO validation or malformed JSON).
     #[error("{0}")]
     Validation(String),
-    #[error("identifiants invalides")]
+    #[error("invalid credentials")]
     InvalidCredentials,
-    #[error("non autorisé")]
+    #[error("unauthorized")]
     Unauthorized,
     #[error("{0}")]
     Conflict(String),
     #[error("{0}")]
     NotFound(&'static str),
-    /// Détail loggé côté serveur, jamais renvoyé au client.
-    #[error("erreur interne")]
+    /// Server-side logged detail, never exposed to the client.
+    #[error("internal server error")]
     Internal(String),
 }
+
 
 impl AppError {
     pub fn status(&self) -> StatusCode {
@@ -40,18 +42,18 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         if let Self::Internal(detail) = &self {
-            tracing::error!(%detail, "erreur interne");
+            tracing::error!(%detail, "internal server error");
         }
         (self.status(), Json(json!({ "error": self.to_string() }))).into_response()
     }
 }
 
-/// Message de conflit selon la contrainte d'unicité violée.
+/// Returns the conflict message matching the violated unique constraint.
 pub fn conflict_message(constraint: Option<&str>) -> &'static str {
     match constraint {
-        Some(c) if c.contains("email") => "email déjà utilisé",
-        Some(c) if c.contains("username") => "username déjà utilisé",
-        _ => "username ou email déjà utilisé",
+        Some(c) if c.contains("email") => "email already in use",
+        Some(c) if c.contains("username") => "username already in use",
+        _ => "username or email already in use",
     }
 }
 
@@ -72,13 +74,13 @@ mod tests {
 
     #[test]
     fn internal_detail_is_never_exposed() {
-        assert_eq!(AppError::Internal("mot de passe db".into()).to_string(), "erreur interne");
+        assert_eq!(AppError::Internal("db password".into()).to_string(), "internal server error");
     }
 
     #[test]
     fn conflict_message_follows_constraint() {
-        assert_eq!(conflict_message(Some("users_email_key")), "email déjà utilisé");
-        assert_eq!(conflict_message(Some("users_username_key")), "username déjà utilisé");
-        assert_eq!(conflict_message(None), "username ou email déjà utilisé");
+        assert_eq!(conflict_message(Some("users_email_key")), "email already in use");
+        assert_eq!(conflict_message(Some("users_username_key")), "username already in use");
+        assert_eq!(conflict_message(None), "username or email already in use");
     }
 }
