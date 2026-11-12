@@ -17,7 +17,7 @@ pub fn hash_password(password: &str) -> Result<String, AppError> {
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map(|hash| hash.to_string())
-        .map_err(|e| AppError::Internal(format!("hachage : {e}")))
+        .map_err(|e| AppError::Internal(format!("hashing: {e}")))
 }
 
 
@@ -50,10 +50,11 @@ pub async fn verify(password: String, hash: String) -> Result<bool, AppError> {
 
 /// Performs a dummy password verification when the email is unknown, mitigating
 /// timing attacks that could reveal whether an account exists.
+
 pub async fn verify_dummy(password: String) -> Result<(), AppError> {
     static DUMMY_HASH: OnceLock<String> = OnceLock::new();
     run_blocking(move || {
-        let hash = DUMMY_HASH.get_or_init(|| hash_password("mot-de-passe-factice-1").unwrap_or_default());
+        let hash = DUMMY_HASH.get_or_init(|| hash_password("dummy-password-1").unwrap_or_default());
         verify_password(&password, hash);
     })
     .await
@@ -66,10 +67,12 @@ where
 {
     tokio::task::spawn_blocking(job)
         .await
-        .map_err(|e| AppError::Internal(format!("tâche bloquante : {e}")))
+        .map_err(|e| AppError::Internal(format!("blocking task: {e}")))
 }
 
+
 // ═══════════════════════════════ UNIT TEST ═══════════════════════════════
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -83,7 +86,7 @@ mod tests {
     #[test]
     fn wrong_password_is_rejected() {
         let hash = hash_password("Sup3rSecret!").unwrap();
-        assert!(!verify_password("autre-mot-de-passe1", &hash));
+        assert!(!verify_password("other-password1", &hash));
     }
 
     #[test]
@@ -103,7 +106,7 @@ mod tests {
 
     #[test]
     fn malformed_hash_never_verifies() {
-        assert!(!verify_password("x", "pas-un-hash"));
+        assert!(!verify_password("x", "not-a-hash"));
         assert!(!verify_password("x", ""));
     }
 
@@ -111,11 +114,12 @@ mod tests {
     async fn async_wrappers_roundtrip() {
         let hash = hash("Sup3rSecret!".into()).await.unwrap();
         assert!(verify("Sup3rSecret!".into(), hash.clone()).await.unwrap());
-        assert!(!verify("mauvais".into(), hash).await.unwrap());
+        assert!(!verify("wrong".into(), hash).await.unwrap());
     }
 
     #[tokio::test]
     async fn dummy_verification_never_fails() {
-        verify_dummy("n-importe-quoi".into()).await.unwrap();
+        verify_dummy("anything".into()).await.unwrap();
     }
+
 }

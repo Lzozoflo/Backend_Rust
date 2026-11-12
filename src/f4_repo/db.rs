@@ -12,7 +12,7 @@ const RETRY_DELAY: Duration = Duration::from_secs(2);
 
 /// Creates a lazy pool that only connects on the first query (useful for database-less tests).
 pub fn connect_lazy(url: &str) -> Db {
-    PgPoolOptions::new().max_connections(MAX_CONNECTIONS).connect_lazy(url).expect("DATABASE_URL invalide")
+    PgPoolOptions::new().max_connections(MAX_CONNECTIONS).connect_lazy(url).expect("invalid DATABASE_URL")
 }
 
 /// Connects to PostgreSQL with automatic retries, handling cases where the database starts after the backend.
@@ -22,7 +22,7 @@ pub async fn connect(url: &str) -> Result<Db, sqlx::Error> {
         match PgPoolOptions::new().max_connections(MAX_CONNECTIONS).connect(url).await {
             Ok(pool) => return Ok(pool),
             Err(err) if attempt < CONNECT_ATTEMPTS => {
-                tracing::warn!(attempt, max = CONNECT_ATTEMPTS, %err, "base injoignable, nouvelle tentative");
+                tracing::warn!(attempt, max = CONNECT_ATTEMPTS, %err, "database unreachable, retrying");
                 attempt += 1;
                 tokio::time::sleep(RETRY_DELAY).await;
             }
@@ -30,7 +30,6 @@ pub async fn connect(url: &str) -> Result<Db, sqlx::Error> {
         }
     }
 }
-
 /// Runs pending SQL migrations from `migrations/` (embedded into the binary at compile time).
 pub async fn migrate(url: &str) -> Result<(), MigrationError> {
     let mut connection = PgConnection::connect(url).await?;

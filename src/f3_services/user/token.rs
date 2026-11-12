@@ -24,7 +24,7 @@ pub fn create_token(user_id: Uuid, secret: &str, ttl_secs: u64) -> Result<String
     let iat = now();
     let claims = Claims { sub: user_id.to_string(), iat, exp: iat + ttl_secs };
     encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes()))
-        .map_err(|e| AppError::Internal(format!("jwt : {e}")))
+        .map_err(|e| AppError::Internal(format!("jwt: {e}")))
 }
 
 /// Returns the user's `Uuid` if the token signature is valid and not expired.
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn wrong_secret_is_rejected() {
         let token = create_token(Uuid::new_v4(), "secret", 60).unwrap();
-        assert!(verify_token(&token, "autre").is_err());
+        assert!(verify_token(&token, "other").is_err());
     }
 
     #[test]
@@ -61,13 +61,13 @@ mod tests {
 
     #[test]
     fn non_uuid_subject_is_rejected() {
-        let claims = Claims { sub: "pas-un-uuid".into(), iat: now(), exp: now() + 60 };
+        let claims = Claims { sub: "not-a-uuid".into(), iat: now(), exp: now() + 60 };
         let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(b"secret")).unwrap();
         assert!(verify_token(&token, "secret").is_err());
     }
 
     #[test]
     fn garbage_is_rejected() {
-        assert!(verify_token("n.importe.quoi", "secret").is_err());
+        assert!(verify_token("garbage.token.value", "secret").is_err());
     }
 }

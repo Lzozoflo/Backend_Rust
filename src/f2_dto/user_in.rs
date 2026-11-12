@@ -49,7 +49,7 @@ pub struct LoginRequest {
 impl Validate for LoginRequest {
     fn validate(&self) -> Result<(), AppError> {
         if self.email.trim().is_empty() || self.password.is_empty() {
-            return Err(invalid("email et password requis"));
+            return Err(invalid("email and password required"));
         }
         Ok(())
     }
@@ -68,7 +68,7 @@ pub struct UpdateUserRequest {
 impl Validate for UpdateUserRequest {
     fn validate(&self) -> Result<(), AppError> {
         if self.username.is_none() && self.email.is_none() && self.password.is_none() {
-            return Err(invalid("aucun champ à modifier"));
+            return Err(invalid("no fields to update"));
         }
         if let Some(username) = &self.username {
             check_username(username)?;
@@ -92,17 +92,17 @@ fn invalid(message: &str) -> AppError {
 fn check_username(raw: &str) -> Result<(), AppError> {
     let username = normalize_username(raw);
     if !USERNAME_LEN.contains(&username.chars().count()) {
-        return Err(invalid("username : entre 3 et 32 caractères"));
+        return Err(invalid("username: must be between 3 and 32 characters"));
     }
     if !username.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
-        return Err(invalid("username : lettres, chiffres, '_' et '-' uniquement"));
+        return Err(invalid("username: only letters, digits, '_' and '-' allowed"));
     }
     Ok(())
 }
 
 fn check_email(raw: &str) -> Result<(), AppError> {
     let email = normalize_email(raw);
-    let err = || invalid("email invalide");
+    let err = || invalid("invalid email");
 
     if email.len() > EMAIL_MAX_LEN || email.chars().any(char::is_whitespace) {
         return Err(err());
@@ -122,15 +122,15 @@ fn check_email(raw: &str) -> Result<(), AppError> {
 fn check_password(password: &str) -> Result<(), AppError> {
     let len = password.chars().count();
     if len < PASSWORD_MIN_LEN {
-        return Err(invalid("password : 8 caractères minimum"));
+        return Err(invalid("password: 8 characters minimum"));
     }
     if password.len() > PASSWORD_MAX_LEN {
-        return Err(invalid("password : 128 octets maximum"));
+        return Err(invalid("password: 128 bytes maximum"));
     }
     let has_letter = password.chars().any(char::is_alphabetic);
     let has_digit = password.chars().any(|c| c.is_ascii_digit());
     if !(has_letter && has_digit) {
-        return Err(invalid("password : au moins une lettre et un chiffre"));
+        return Err(invalid("password: at least one letter and one digit required"));
     }
     Ok(())
 }
@@ -146,7 +146,7 @@ mod tests {
 
     #[test]
     fn valid_registration_passes() {
-        assert!(register("scratch_42", "a@b.fr", "motdepasse1").validate().is_ok());
+        assert!(register("scratch_42", "a@b.fr", "password1").validate().is_ok());
     }
 
     #[test]
@@ -156,25 +156,25 @@ mod tests {
         assert!(check_username("bad name").is_err());
         assert!(check_username("é-accent").is_err());
         assert!(check_username("ok-name_1").is_ok());
-        assert!(check_username("  padded  ").is_ok(), "les espaces de bord sont normalisés");
+        assert!(check_username("  padded  ").is_ok(), "leading/trailing whitespace is trimmed");
     }
 
     #[test]
     fn email_rules() {
         for bad in ["", "plain", "@b.fr", "a@b", "a@@b.fr", "a b@c.fr", "a@.fr", "a@b..fr", "a@b.fr."] {
-            assert!(check_email(bad).is_err(), "{bad:?} devrait être refusé");
+            assert!(check_email(bad).is_err(), "{bad:?} should be rejected");
         }
-        assert!(check_email("prenom.nom+tag@ecole42.fr").is_ok());
-        assert!(check_email("  Majuscule@Exemple.FR ").is_ok());
+        assert!(check_email("first.last+tag@school42.fr").is_ok());
+        assert!(check_email("  Uppercase@Example.FR ").is_ok());
     }
 
     #[test]
     fn password_rules() {
-        assert!(check_password("court1").is_err());
-        assert!(check_password("sansaucunchiffre").is_err());
+        assert!(check_password("short1").is_err());
+        assert!(check_password("withoutanydigit").is_err());
         assert!(check_password("12345678").is_err());
         assert!(check_password(&format!("a1{}", "x".repeat(200))).is_err());
-        assert!(check_password("motdepasse1").is_ok());
+        assert!(check_password("password1").is_ok());
     }
 
     #[test]
@@ -198,9 +198,10 @@ mod tests {
             email: e.map(Into::into),
             password: p.map(Into::into),
         };
-        assert!(update(None, None, None).validate().is_err(), "rien à modifier");
-        assert!(update(Some("nouveau"), None, None).validate().is_ok());
+        assert!(update(None, None, None).validate().is_err(), "nothing to update");
+        assert!(update(Some("new_name"), None, None).validate().is_ok());
         assert!(update(None, Some("nope"), None).validate().is_err());
-        assert!(update(None, None, Some("faible")).validate().is_err());
+        assert!(update(None, None, Some("weak")).validate().is_err());
     }
+
 }

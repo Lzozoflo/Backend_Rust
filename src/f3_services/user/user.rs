@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-const USER_NOT_FOUND: &str = "User Not Found";
+const USER_NOT_FOUND: &str = "user not found";
 
 pub async fn register(db: &Db, req: RegisterRequest) -> Result<UserResponse, AppError> {
     let password_hash = password::hash(req.password).await?;
