@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ${PROJECT_NAME:?copie .env.example vers .env}_db
+    environment:
+      POSTGRES_DB: ${PROJECT_NAME:?copie .env.example vers .env}_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${PROJECT_NAME:?copie .env.example vers .env}_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PATH_DATABASE_VOLUME:-${HOME}/${PROJECT_NAME:?copie .env.example vers .env}_data}

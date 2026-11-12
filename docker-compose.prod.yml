@@ -1,0 +1,18 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name:  ${PROJECT_NAME:?copie .env.example vers .env}_backend
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:${HOST_PORT:-8081}:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/${PROJECT_NAME:?copie .env.example vers .env}_db
+      APP_VERSION: ${APP_VERSION:-0.1}
+      TOKEN_SECRET: ${TOKEN_SECRET:?TOKEN_SECRET est obligatoire en prod}
+      TOKEN_EXPIRATION: ${TOKEN_EXPIRATION:-3600}

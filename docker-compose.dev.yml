@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: ${PROJECT_NAME:?copie .env.example vers .env}_backend
+    working_dir: /app
+    command: cargo watch -x run
+    ports:
+      - 127.0.0.1:${HOST_PORT:-8081}:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/app/target
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/${PROJECT_NAME:?copie .env.example vers .env}_db
+      RUST_LOG: info,tower_http=debug
+      APP_VERSION: ${APP_VERSION:-0.1}
+      TOKEN_SECRET: ${TOKEN_SECRET:-dev-only-secret-change-me}
+      TOKEN_EXPIRATION: ${TOKEN_EXPIRATION:-3600}
+
+  adminer:
+    image: adminer:latest
+    container_name: ${PROJECT_NAME:?copie .env.example vers .env}_adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-5051}:8080"
+    depends_on:
+      - db
+
+volumes:
+  cargo-registry:
+  cargo-target:
