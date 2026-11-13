@@ -5,6 +5,7 @@ Stack : **Axum** (HTTP) · **SQLx** (PostgreSQL, requêtes paramétrées) · **J
 
 ---
 
+
 ## Démarrage rapide
 
 ```bash
