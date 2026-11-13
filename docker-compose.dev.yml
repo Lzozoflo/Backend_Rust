@@ -6,7 +6,7 @@ services:
       target: dev
     container_name: ${PROJECT_NAME:?copie .env.example vers .env}_backend
     working_dir: /app
-    command: cargo watch -x run
+    command: cargo watch -q --delay 2 -w src -w migrations -w Cargo.toml -w build.rs -x "run -q"
     ports:
       - 127.0.0.1:${HOST_PORT:-8081}:8080
     depends_on:

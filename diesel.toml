@@ -1,0 +1,8 @@
+# Config du CLI Diesel.
+# `src/schema.rs` est la SOURCE DE VÉRITÉ du schéma : tu le modifies, puis
+# `make migration name=...` génère up.sql / down.sql tout seul (--diff-schema).
+[print_schema]
+file = "src/schema.rs"
+
+[migrations_directory]
+dir = "migrations"

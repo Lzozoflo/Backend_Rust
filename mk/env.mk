@@ -2,6 +2,7 @@
 
 -include .env
 export
+MAKEFLAGS += --no-print-directory
 
 DOCKER  ?= /usr/bin/docker
 COMPOSE ?= $(DOCKER) compose

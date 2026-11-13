@@ -4,6 +4,7 @@
 
 pub mod config;
 pub mod error;
+pub mod schema;
 
 pub mod f1_router;
 pub mod f2_dto;

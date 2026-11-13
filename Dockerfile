@@ -1,8 +1,9 @@
 # ─── Étape dev : hot-reload avec cargo-watch ─────────────────────────────────
 FROM rust:1-slim-bookworm AS dev
-RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev libpq-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && cargo install cargo-watch --locked
+    && cargo install cargo-watch --locked \
+    && cargo install diesel_cli --no-default-features --features postgres --locked
 WORKDIR /app
 
 # ─── Étape 1 : Build de l'application ────────────────────────────────────────
@@ -16,6 +17,7 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs && echo "" > src/lib.rs \
     && cargo build --release && rm -rf src
 
 # Compilation réelle
+COPY build.rs ./
 COPY src ./src
 RUN touch src/main.rs src/lib.rs && cargo build --release
 

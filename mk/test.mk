@@ -7,7 +7,7 @@ BLUE       ?= $(CYAN)
 
 ECHO = @echo "\n$(BLUE)------------------------------------------------------------------$(RESET)\n$(YELLOW)[➡] Executing:$(RESET)"
 
-TEST_USER  ?= client_testee
+TEST_USER  ?= client_teste
 TEST_EMAIL ?= teste@exemple.com
 TEST_PASS  ?= MonMotDePasse123!
 
@@ -15,9 +15,12 @@ ADMIN_USER  ?= admin
 ADMIN_EMAIL ?= admin@exemple.com
 ADMIN_PASS  ?= AdminPassword123!
 
-USER  ?= $(ADMIN_USER)
-EMAIL ?= $(ADMIN_EMAIL)
-PASS  ?= $(ADMIN_PASS)
+USER  ?= $(TEST_USER)
+EMAIL ?= $(TEST_EMAIL)
+PASS  ?= $(TEST_PASS)
+# USER  ?= $(ADMIN_USER)
+# EMAIL ?= $(ADMIN_EMAIL)
+# PASS  ?= $(ADMIN_PASS)
 
 .PHONY: test-db lint fmt all-test health user-service register login update-user delete
 

@@ -1,6 +1,7 @@
 .PHONY: all help dev prod logs logs-% prod-logs prod-logs-% ps restart \
         db-export db-import db-shell down clean fclean re in-% \
-        unit unit-local test-all rename
+        unit unit-local test-all rename \
+        migration migration-empty migrate revert redo schema
 
 # ─── Environnement & Variables ────────────────────────────────────────────────
 
@@ -27,6 +28,9 @@ help:
 	@echo "  $(CYAN)make unit-local$(RESET)   : Tests unitaires avec ton Cargo local"
 	@echo "  $(CYAN)make test-all$(RESET)     : Unitaires + tests d'intégration (sans base)"
 	@echo "  $(CYAN)make test-db$(RESET)      : Parcours complet contre une vraie base Postgres"
+	@echo "  $(CYAN)make migration name=xxx$(RESET) : GÉNÈRE la migration depuis src/schema.rs (diesel --diff-schema)"
+	@echo "  $(CYAN)make migrate$(RESET)      : Applique les migrations (et réécrit src/schema.rs)"
+	@echo "  $(CYAN)make revert$(RESET)       : Annule la dernière migration"
 	@echo "  $(YELLOW)make db-shell$(RESET)     : Ouvre un terminal SQL (psql) dans la DB"
 	@echo "  $(YELLOW)make db-export$(RESET)    : Sauvegarde la DB dans $(BACKUP_FILE)"
 	@echo "  $(YELLOW)make db-import$(RESET)    : Restaure la DB depuis $(BACKUP_FILE)"
@@ -131,4 +135,5 @@ test-all:
 rename:
 	sed -i '0,/^name = ".*"/s//name = "$(PROJECT_NAME)"/' Cargo.toml
 
+include mk/diesel.mk
 include mk/test.mk

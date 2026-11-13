@@ -1,7 +1,7 @@
-# Backend_Rust — Axum + SQLx
+# Backend_Rust — Axum + Diesel
 
 Backend HTTP en Rust : inscription, connexion et gestion de compte.
-Stack : **Axum** (HTTP) · **SQLx** (PostgreSQL, requêtes paramétrées) · **JWT** · **Argon2id**.
+Stack : **Axum** (HTTP) · **Diesel + diesel-async** (PostgreSQL, requêtes paramétrées, migrations générées) · **JWT** · **Argon2id**.
 
 ---
 
@@ -48,14 +48,17 @@ src/
 │     ├─ password.rs      hachage / vérification Argon2id
 │     └─ token.rs         création / vérification des JWT
 ├─ f4_repo/             accès base de données (SQL)
-│  ├─ db.rs               pool de connexions + migrations
+│  ├─ db.rs               pool bb8 + migrations embarquées
 │  ├─ user.rs             requêtes SQL de l'entité user
-│  └─ error.rs            sqlx::Error → AppError
+│  └─ error.rs            diesel::result::Error → AppError
+├─ schema.rs            schéma Diesel (source de vérité des migrations)
 ├─ config.rs            variables d'environnement
 ├─ error.rs             AppError (réponses JSON d'erreur)
 ├─ lib.rs / main.rs
 migrations/
-└─ 0001_create_users.sql
+└─ 2026-11-13-100000_create_users/{up,down}.sql
+diesel.toml             config du CLI Diesel
+build.rs                recompile quand une migration est ajoutée
 tests/
 ├─ api.rs               intégration HTTP (sans base)
 ├─ db_flow.rs           parcours complet contre Postgres (ignoré par défaut)
@@ -70,6 +73,24 @@ f1_route  →  f2_dto (validate)  →  f3_services  →  f4_repo  →  PostgreSQ
 
 - L'extracteur `ValidJson` désérialise le corps **puis appelle `validate()`** du DTO : si le handler s'exécute, l'entrée est valide. Une entrée invalide n'atteint jamais les services.
 - Les services ne contiennent aucun SQL ; `f4_repo` ne contient aucune logique métier.
+
+---
+
+## Migrations (générées automatiquement)
+
+`src/schema.rs` est la source de vérité. Tu le modifies, Diesel écrit le SQL :
+
+```bash
+# 1. édite src/schema.rs (ajoute une colonne / une table dans diesel::table! { ... })
+make migration name=add_role   # 2. génère migrations/<date>_add_role/{up,down}.sql
+make migrate                   # 3. applique + réécrit src/schema.rs depuis la base
+make revert                    #    annule la dernière migration
+make migration-empty name=xxx  #    migration vide, SQL à la main (index fonctionnels, données…)
+```
+
+- Les migrations sont aussi appliquées au démarrage du serveur (`f4_repo::migrate`).
+- Relis toujours `up.sql` : un renommage de colonne est vu comme « drop + add » par `--diff-schema`.
+- Après avoir ajouté la table dans `schema.rs`, ajoute la struct `Queryable` correspondante dans `f4_repo/`.
 
 ---
 

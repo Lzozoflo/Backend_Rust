@@ -1,16 +1,18 @@
-//! SQL queries for the `user` entity. Contains no business logic.
+//! Diesel queries for the `user` entity. Contains no business logic.
 //!
-//! User-supplied values ALWAYS go through `.bind()` (parameterized queries `$1, $2…`):
+//! Diesel's query builder always sends user-supplied values as bind parameters:
 //! string concatenation is never used, preventing SQL injection.
 
 use chrono::{DateTime, Utc};
-use sqlx::FromRow;
+use diesel::{dsl::now, prelude::*};
+use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
-use super::Db;
-use crate::error::AppError;
+use super::{error::pool_error, Db};
+use crate::{error::AppError, schema::users};
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone, Queryable, Selectable)]
+#[diesel(table_name = users, check_for_backend(diesel::pg::Pg))]
 pub struct User {
     pub id: Uuid,
     pub username: String,
@@ -26,8 +28,9 @@ pub struct NewUser<'a> {
     pub password_hash: &'a str,
 }
 
-/// Partial update payload: only `Some` fields are modified.
-#[derive(Debug, Default)]
+/// Partial update payload: only `Some` fields are modified (`None` fields are skipped by Diesel).
+#[derive(Debug, Default, AsChangeset)]
+#[diesel(table_name = users)]
 pub struct UserChanges<'a> {
     pub username: Option<&'a str>,
     pub email: Option<&'a str>,
@@ -35,49 +38,45 @@ pub struct UserChanges<'a> {
 }
 
 pub async fn insert(db: &Db, new: NewUser<'_>) -> Result<User, AppError> {
-    let user = sqlx::query_as::<_, User>(
-        "INSERT INTO users (id, username, email, password_hash)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *",
-    )
-    .bind(Uuid::now_v7())
-    .bind(new.username)
-    .bind(new.email)
-    .bind(new.password_hash)
-    .fetch_one(db)
-    .await?;
-    Ok(user)
-}
-
-pub async fn find_by_email(db: &Db, email: &str) -> Result<Option<User>, AppError> {
-    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
-        .bind(email)
-        .fetch_optional(db)
+    let mut conn = db.get().await.map_err(pool_error)?;
+    let user = diesel::insert_into(users::table)
+        .values((
+            users::id.eq(Uuid::now_v7()),
+            users::username.eq(new.username),
+            users::email.eq(new.email),
+            users::password_hash.eq(new.password_hash),
+        ))
+        .returning(User::as_returning())
+        .get_result(&mut conn)
         .await?;
     Ok(user)
 }
 
+pub async fn find_by_email(db: &Db, email: &str) -> Result<Option<User>, AppError> {
+    let mut conn = db.get().await.map_err(pool_error)?;
+    let user = users::table
+        .filter(users::email.eq(email))
+        .select(User::as_select())
+        .first(&mut conn)
+        .await
+        .optional()?;
+    Ok(user)
+}
+
 pub async fn update(db: &Db, id: Uuid, changes: UserChanges<'_>) -> Result<Option<User>, AppError> {
-    let user = sqlx::query_as::<_, User>(
-        "UPDATE users
-         SET username      = COALESCE($2, username),
-             email         = COALESCE($3, email),
-             password_hash = COALESCE($4, password_hash),
-             updated_at    = now()
-         WHERE id = $1
-         RETURNING *",
-    )
-    .bind(id)
-    .bind(changes.username)
-    .bind(changes.email)
-    .bind(changes.password_hash)
-    .fetch_optional(db)
-    .await?;
+    let mut conn = db.get().await.map_err(pool_error)?;
+    let user = diesel::update(users::table.find(id))
+        .set((changes, users::updated_at.eq(now)))
+        .returning(User::as_returning())
+        .get_result(&mut conn)
+        .await
+        .optional()?;
     Ok(user)
 }
 
 /// Deletes a user by ID. Returns `true` if a row was deleted.
 pub async fn delete(db: &Db, id: Uuid) -> Result<bool, AppError> {
-    let result = sqlx::query("DELETE FROM users WHERE id = $1").bind(id).execute(db).await?;
-    Ok(result.rows_affected() > 0)
+    let mut conn = db.get().await.map_err(pool_error)?;
+    let deleted = diesel::delete(users::table.find(id)).execute(&mut conn).await?;
+    Ok(deleted > 0)
 }
