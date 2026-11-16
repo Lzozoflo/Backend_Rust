@@ -5,7 +5,7 @@ use axum::{
     body::Body,
     http::{header, Method, Request, StatusCode},
 };
-use common::{app_without_db, send, TEST_SECRET};
+use common::{app_without_db, send};
 use serde_json::json;
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -22,7 +22,7 @@ async fn health_returns_ok_and_version() {
 async fn unknown_route_returns_json_404() {
     let (status, body) = send(&app_without_db(), Method::GET, "/nope", None, None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(body["error"], "route inconnue");
+    assert_eq!(body["error"], "unknown route");
 }
 
 #[tokio::test]
@@ -52,7 +52,7 @@ async fn register_with_missing_field_returns_json_400() {
     let (status, body) =
         send(&app_without_db(), Method::POST, "/register", None, Some(json!({ "username": "abc" }))).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(body["error"].as_str().unwrap().starts_with("JSON invalide"));
+    assert!(body["error"].as_str().unwrap().starts_with("invalid JSON"));
 }
 
 #[tokio::test]
@@ -73,15 +73,7 @@ async fn protected_routes_require_a_token() {
 
 #[tokio::test]
 async fn token_signed_with_another_secret_is_rejected() {
-    let forged = create_token(Uuid::new_v4(), "pas-le-bon-secret", 60).unwrap();
+    let forged = create_token(Uuid::new_v4(), 1, "pas-le-bon-secret", 60).unwrap();
     let (status, _) = send(&app_without_db(), Method::DELETE, "/user", Some(&forged), None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn update_with_valid_token_but_empty_body_is_rejected_before_the_db() {
-    let token = create_token(Uuid::new_v4(), TEST_SECRET, 60).unwrap();
-    let (status, body) = send(&app_without_db(), Method::PUT, "/user", Some(&token), Some(json!({}))).await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(body["error"], "aucun champ à modifier");
 }

@@ -49,6 +49,18 @@ impl FromRequestParts<AppState> for AuthUser {
             .and_then(|value| value.to_str().ok())
             .and_then(|value| value.strip_prefix("Bearer "))
             .ok_or(AppError::Unauthorized)?;
-        token::verify_token(jwt, &state.config.token_secret).map(Self)
+
+        let (user_id, token_ver) = token::verify_token(jwt, &state.config.token_secret)?;
+
+        // Vérification de la version en base de données
+        let current_ver = crate::f4_repo::user::get_token_version(&state.db, user_id)
+            .await?
+            .ok_or(AppError::Unauthorized)?;
+
+        if token_ver != current_ver {
+            return Err(AppError::Unauthorized);
+        }
+
+        Ok(Self(user_id))
     }
 }

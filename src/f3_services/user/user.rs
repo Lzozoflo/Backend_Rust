@@ -40,7 +40,7 @@ pub async fn login(db: &Db, config: &Config, req: LoginRequest) -> Result<AuthRe
     }
 
     Ok(AuthResponse {
-        token: token::create_token(user.id, &config.token_secret, config.token_expiration)?,
+        token: token::create_token(user.id, user.token_version, &config.token_secret, config.token_expiration)?,
         token_type: "Bearer",
         expires_in: config.token_expiration,
         user: user.into(),
@@ -69,4 +69,12 @@ pub async fn delete(db: &Db, id: Uuid) -> Result<(), AppError> {
     } else {
         Err(AppError::NotFound(USER_NOT_FOUND))
     }
+}
+
+
+pub async fn logout_all(db: &Db, id: Uuid) -> Result<(), AppError> {
+    f4_repo::user::increment_token_version(db, id)
+        .await?
+        .ok_or(AppError::NotFound(USER_NOT_FOUND))?;
+    Ok(())
 }

@@ -8,6 +8,7 @@ diesel::table! {
         username -> Varchar,
         email -> Varchar,
         password_hash -> Text,
+        token_version -> Int4,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

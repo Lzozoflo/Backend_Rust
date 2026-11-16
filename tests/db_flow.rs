@@ -30,12 +30,12 @@ async fn full_user_lifecycle() {
     // ── conflits (email, puis username sans tenir compte de la casse) ──
     let (status, body) = send(&app, Method::POST, "/register", None, Some(payload)).await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["error"], "email déjà utilisé");
+    assert_eq!(body["error"], "email already in use");
 
     let same_name = json!({ "username": username.to_uppercase(), "email": format!("autre_{email}"), "password": "motdepasse1" });
     let (status, body) = send(&app, Method::POST, "/register", None, Some(same_name)).await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["error"], "username déjà utilisé");
+    assert_eq!(body["error"], "username already in use");
 
     // ── login ──
     let login = |password: &str| json!({ "email": email.to_uppercase(), "password": password });
@@ -50,7 +50,11 @@ async fn full_user_lifecycle() {
     let (status, _) = send(&app, Method::POST, "/login", None, Some(unknown)).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
-    // ── update ──
+    // ── update (rejet corps vide + mise à jour valide) ──
+    let (status, body) = send(&app, Method::PUT, "/user", Some(&token), Some(json!({}))).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"], "no fields to update");
+
     let new_name = format!("{username}_v2");
     let update = json!({ "username": new_name, "password": "nouveaumdp2" });
     let (status, body) = send(&app, Method::PUT, "/user", Some(&token), Some(update)).await;
@@ -67,7 +71,8 @@ async fn full_user_lifecycle() {
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (status, body): (_, Value) = send(&app, Method::DELETE, "/user", Some(&token), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(body["error"], "utilisateur introuvable");
+    assert_eq!(body["error"], "user not found");
     let (status, _) = send(&app, Method::POST, "/login", None, Some(login("nouveaumdp2"))).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
+
 }
