@@ -1,8 +1,7 @@
 # ─── Diesel : migrations générées automatiquement ────────────────────────────
 # Le CLI `diesel` est installé dans l'image dev (Dockerfile, étape `dev`).
-# --user : les fichiers générés t'appartiennent (et pas à root).
 
-DIESEL = $(COMPOSE_DEV) run --rm --user "$$(id -u):$$(id -g)" backend diesel
+DIESEL = $(COMPOSE_DEV) run --rm -T backend diesel
 
 # 1. Tu modifies src/schema.rs
 # 2. make migration name=add_role   → génère migrations/<date>_add_role/{up,down}.sql

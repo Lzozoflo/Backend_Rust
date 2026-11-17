@@ -1,14 +1,13 @@
-// Schéma Diesel. Modifie ce fichier, puis lance `make migration name=<nom>` :
-// Diesel compare ce fichier à la base et écrit la migration SQL pour toi.
-// `make migrate` l'applique puis réécrit ce fichier depuis la base.
+// @generated automatically by Diesel CLI.
 
 diesel::table! {
     users (id) {
         id -> Uuid,
+        #[max_length = 32]
         username -> Varchar,
+        #[max_length = 254]
         email -> Varchar,
         password_hash -> Text,
-        token_version -> Int4,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

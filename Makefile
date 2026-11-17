@@ -6,10 +6,8 @@
 # ─── Environnement & Variables ────────────────────────────────────────────────
 
 include mk/env.mk
-
-POSTGRES_CONTAINER   ?= ${PROJECT_NAME:?copie .env.example vers .env}_db
-POSTGRES_DB          ?= ${PROJECT_NAME:?copie .env.example vers .env}_db
-POSTGRES_USER        ?= postgres
+include mk/diesel.mk
+include mk/test.mk
 
 
 # ─── Aide par défaut ──────────────────────────────────────────────────────────
@@ -66,21 +64,15 @@ prod-logs:
 prod-logs-%:
 	$(COMPOSE_PROD) logs -f $*
 
-# ─── SAUVEGARDE, TRANSFERT & OUTILS DB ────────────────────────────────────────
+backup-prod:
+	@mkdir -p $(BACKUP_DIR)
+	$(COMPOSE_PROD) exec -T db pg_dump -U $(DB_USER) --clean --if-exists $(DB_NAME) \
+		> $(BACKUP_DIR)/backup_$$(date +%F_%H%M).sql
+	@echo "Backup créé dans $(BACKUP_DIR)/"
 
-db-export:
-	@$(DOCKER) exec -t $(POSTGRES_CONTAINER) pg_dump -U $(POSTGRES_USER) -d $(POSTGRES_DB) --clean --if-exists > $(BACKUP_FILE)
-	@echo "$(GREEN)Base sauvegardée dans $(BACKUP_FILE)$(RESET)"
-
-db-import:
-	@if [ ! -f $(BACKUP_FILE) ]; then \
-		echo "$(RED)Fichier $(BACKUP_FILE) introuvable !$(RESET)"; exit 1; \
-	fi
-	@cat $(BACKUP_FILE) | $(DOCKER) exec -i $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) >/dev/null
-	@echo "$(GREEN)Base restaurée avec succès depuis $(BACKUP_FILE)$(RESET)"
-
-db-shell:
-	$(DOCKER) exec -it $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+restore-prod:
+	@test -n "$(FILE)" || (echo "Usage: make restore-prod FILE=backups/xxx.sql" && exit 1)
+	$(COMPOSE_PROD) exec -T db psql -U $(DB_USER) $(DB_NAME) < $(FILE)
 
 # ─── ARRÊT ET NETTOYAGE ───────────────────────────────────────────────────────
 
@@ -133,6 +125,3 @@ unit-docker:
 
 rename:
 	sed -i '0,/^name = ".*"/s//name = "$(PROJECT_NAME)"/' Cargo.toml
-
-include mk/diesel.mk
-include mk/test.mk
