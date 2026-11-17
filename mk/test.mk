@@ -28,7 +28,7 @@ PASS  ?= $(TEST_PASS)
 
 # Parcours complet user contre une vraie base Postgres (tests/db_flow.rs)
 test-db:
-	@mkdir -p $(PATH_DATABASE_VOLUME)
+	@mkdir -p $(PATH_VOLUME)
 	$(COMPOSE_DEV) run --rm backend cargo test --test db_flow -- --ignored
 
 lint:

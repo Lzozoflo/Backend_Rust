@@ -15,7 +15,7 @@ COMPOSE_PROD = $(COMPOSE) -f docker-compose.prod.yml
 COMPOSE_ALL  = $(COMPOSE) -f docker-compose.dev.yml -f docker-compose.prod.yml
 
 DB_USER ?= postgres
-DB_NAME ?= thescratchgame
+DB_NAME ?= $(PROJECT_NAME)_db
 BACKUP_DIR = backups
 
 # ─── Couleurs ─────────────────────────────────────────────────────────────────

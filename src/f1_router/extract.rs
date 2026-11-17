@@ -55,7 +55,10 @@ impl FromRequestParts<AppState> for AuthUser {
         // Vérification de la version en base de données
         let current_ver = crate::f4_repo::user::get_token_version(&state.db, user_id)
             .await?
-            .ok_or(AppError::Unauthorized)?;
+            .ok_or(AppError::NotFound("user not found"))?; // Remplacer Unauthorized par NotFound
+        // let current_ver = crate::f4_repo::user::get_token_version(&state.db, user_id)
+        //     .await?
+        //     .ok_or(AppError::Unauthorized)?;
 
         if token_ver != current_ver {
             return Err(AppError::Unauthorized);

@@ -1,4 +1,4 @@
-# Backend_Rust — Axum + Diesel
+# Backend_Rust_scratchgame — Axum + Diesel
 
 Backend HTTP en Rust : inscription, connexion et gestion de compte.
 Stack : **Axum** (HTTP) · **Diesel + diesel-async** (PostgreSQL, requêtes paramétrées, migrations générées) · **JWT** · **Argon2id**.
@@ -219,7 +219,7 @@ Côté Docker (voir `.env.example`) : `HOST_PORT` (8081), `ADMINER_PORT` (5051).
 | `make in-backend`   | Shell dans le conteneur backend                                |
 | `make re`           | `fclean` puis relance le dev (**destructif**)                  |
 
-Les données PostgreSQL sont stockées sur l'hôte dans `~/tsg_sqlx_db_data` (modifiable avec `PATH_DATABASE_VOLUME`).
+Les données PostgreSQL sont stockées sur l'hôte dans `~/tsg_sqlx_db_data` (modifiable avec `PATH_VOLUME`).
 
 > ⚠️ `make prune`, `rmi`, `volumes`, `clean`, `fclean` et `re` agissent sur **tout** Docker de la machine, pas seulement ce projet.
 

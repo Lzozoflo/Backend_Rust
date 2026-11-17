@@ -1,7 +1,10 @@
-.PHONY: all help dev prod logs logs-% prod-logs prod-logs-% ps restart \
-        db-export db-import db-shell down clean fclean re in-% \
-        unit unit-docker test-all rename \
-        migration migration-empty migrate revert redo schema
+.PHONY: all help \
+		dev logs logs-% \
+		deploy-prod prod-logs prod-logs-% 
+		down clean fclean re in-% \
+		ps restart \
+		unit unit-docker test-all rename \
+		migration migration-empty migrate revert redo schema
 
 # ─── Environnement & Variables ────────────────────────────────────────────────
 
@@ -53,10 +56,12 @@ restart:
 
 # ─── MODE PRODUCTION (binaire Rust, image runtime légère) ─────────────────────
 
-prod:
+deploy-prod: backup-prod
+	@echo "$(CYAN)Déploiement de la nouvelle version en cours...$(RESET)"
 	@mkdir -p $(PATH_VOLUME)
 	$(COMPOSE_PROD) up -d --build
-	@echo "$(GREEN)Environnement PROD lancé !$(RESET)"
+	@echo "$(GREEN)Déploiement terminé avec succès !$(RESET)"
+
 
 prod-logs:
 	$(COMPOSE_PROD) logs -f
@@ -67,8 +72,9 @@ prod-logs-%:
 backup-prod:
 	@mkdir -p $(BACKUP_DIR)
 	$(COMPOSE_PROD) exec -T db pg_dump -U $(DB_USER) --clean --if-exists $(DB_NAME) \
-		> $(BACKUP_DIR)/backup_$$(date +%F_%H%M).sql
-	@echo "Backup créé dans $(BACKUP_DIR)/"
+		> $(BACKUP_DIR)/tmp.sql
+	@test -s $(BACKUP_DIR)/tmp.sql || (echo "Backup vide, abandon" && exit 1)
+	@mv $(BACKUP_DIR)/tmp.sql $(BACKUP_DIR)/backup_$$(date +%F_%H%M).sql
 
 restore-prod:
 	@test -n "$(FILE)" || (echo "Usage: make restore-prod FILE=backups/xxx.sql" && exit 1)

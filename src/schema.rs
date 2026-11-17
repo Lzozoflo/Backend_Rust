@@ -10,5 +10,6 @@ diesel::table! {
         password_hash -> Text,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        token_version -> Int4,
     }
 }
